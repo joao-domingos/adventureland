@@ -1,102 +1,129 @@
-let sumGold = 0;
-let largestGoldDrop = 0;
-const startTime = new Date(); // Start time to calculate elapsed time
-let interval = 'hour'; // Set default interval (options: 'minute', 'hour', 'day')
+load_code(1);
+load_code(2);
+load_code(3);
 
-// Initialize the gold meter UI
-const initGoldMeter = () => {
-	const $ = parent.$;
-	const brc = $('#bottomrightcorner');
-	brc.find('#goldtimer').remove();
+load_code(5);
+load_code(6);
+load_code(7);
 
-	const goldContainer = $('<div id="goldtimer"></div>').css({
-		fontSize: '25px',
-		color: 'white',
-		textAlign: 'center',
-		display: 'table',
-		overflow: 'hidden',
-		marginBottom: '-5px',
-		width: "100%",
-	});
+const swapWeap = (() => {
+    const swapCooldown = 750; // pequena pausa entre trocas (evita spam)
+    let lastCheck = 0;
 
-	$('<div id="goldtimercontent"></div>')
-		.css({ display: 'table-cell', verticalAlign: 'middle' })
-		.appendTo(goldContainer);
+    return () => {
+        const now = Date.now();
+        if (now - lastCheck < swapCooldown) return;
+        lastCheck = now;
 
-	brc.children().first().after(goldContainer);
-};
+        const pop1 = locate_item("ololipop");
+        const pop2 = locate_item("glolipop");
+        const axe = locate_item("bataxe");
 
-// Format gold string to display
-const formatGoldString = (averageGold) => `
-    <div>${averageGold.toLocaleString('en')} Gold/${interval.charAt(0).toUpperCase() + interval.slice(1)}</div>
-    <div>${largestGoldDrop.toLocaleString('en')} Jackpot</div>
-`;
+        // Se condições para cleave estiverem ativas, equipa o machado
+        if (character.mp > 720 && !is_on_cooldown("cleave")) {
+            if (axe !== -1 && character.slots.mainhand?.name !== "bataxe") {
+                unequip("mainhand");
+				unequip("offhand");
+                equip(axe, "mainhand");
+            }
+        } 
+        // Caso contrário, garante que está com os lollipops
+        else {
+            if ((pop1 !== -1 && character.slots.mainhand?.name !== "ololipop") ||
+                (pop2 !== -1 && character.slots.offhand?.name !== "glolipop")) {
+                unequip("mainhand");
+                equip(pop1, "mainhand");
+                equip(pop2, "offhand");
+            }
+        }
+    };
+})();
 
-// Update the gold display with current data
-const updateGoldDisplay = () => {
-	const $ = parent.$;
-	const averageGold = calculateAverageGold(); // Calculate average gold based on the selected interval
-	$('#goldtimercontent').html(formatGoldString(averageGold)).css({
-		background: 'black',
-		backgroundColor: 'rgba(0, 0, 0, 0.7)',
-		//backgroundColor: 'rgba(0, 0, 0, 1)', // This is black background
-		border: 'solid gray',
-		borderWidth: '4px 4px',
-		height: '50px',
-		lineHeight: '25px',
-		fontSize: '25px',
-		color: '#FFD700',
-		textAlign: 'center',
-	});
-};
+const kaiting = (() => {
+    let kiteIndex = 0;
+    const kiteSpots = [
+        { x: 930, y: -150},
+        { x: 965, y: -220},
+        { x: 1000, y: -150}
+    ];
 
-// Set up a timer to update the display
-setInterval(updateGoldDisplay, 500);
+    let lastMoveTime = 0;
+    const moveCooldown = 500;
 
-// Initialize gold meter
-initGoldMeter();
+    return () => {
+        if (!character.moving && new Date().getTime() - lastMoveTime > moveCooldown) {
+            const { x, y } = kiteSpots[kiteIndex];
+            move(x, y);
+            kiteIndex = (kiteIndex + 1) % kiteSpots.length;
+            lastMoveTime = new Date().getTime();
+        }
+    };
+})();
 
-character.on("loot", (data) => {
-	// Ensure the gold received is valid
-	if (data.gold && typeof data.gold === 'number' && !Number.isNaN(data.gold)) {
-		const partyShare = parent.party[character.name]?.share || 1; // Default to 1 if not in a party
-		const totalGoldInChest = Math.round(data.gold / partyShare); // Calculate total chest gold
+setInterval(function(){
+	
+	const receiver = get_entity("idkhtcmerch");
+	const priest = get_player("idkhtcprst");
+	
+	acceptParty();
+	sendGold();
+	sendItem();
+	
+	sendLocationUpdate();
+	
+	if(character.mp < 740)
+		if(!is_on_cooldown("use_mp")) use_skill('use_mp');
 
-		sumGold += totalGoldInChest; // Track the actual total gold received
+	loot();
+	
+	/*if(character.hp < 7000 && character.mp > 480) {
+		if (!is_on_cooldown("hardshell")) use_skill("hardshell");
+	}*/
+	
+	kaiting();
+	swapWeap();
+	
+	if (priest == null || priest == undefined) return;
+	
+	let helpp;
+    if(!helpp){
+        helpp=get_nearest_monster({type: 'spider'});
+        helpp
+    }
+    if (helpp.target !== "idkhtcwarr")
+        use_skill('taunt', helpp)
 
-		// Track the largest gold drop
-		if (totalGoldInChest > largestGoldDrop) {
-			largestGoldDrop = totalGoldInChest;
+	//var target=get_targeted_monster();
+	var target;
+	if(!target)
+	{
+		target=get_nearest_monster({type: "spider"});
+		if(target) change_target(target);
+		else
+		{
+			set_message("No Monsters");
+			return;
 		}
-	} else {
-		console.warn("Invalid gold value:", data.gold);
 	}
-});
-
-
-// Function to visualize the loot stored in localStorage (optional)
-function logLoot() {
-	let savedLoot = JSON.parse(localStorage.getItem("lootItems") || "{}");
-	console.log(savedLoot);
-}
-
-// Calculate average gold based on the selected interval
-const calculateAverageGold = () => {
-	const elapsedTime = (new Date() - startTime) / 1000; // Elapsed time in seconds
-	const divisor = elapsedTime / (interval === 'minute' ? 60 : interval === 'hour' ? 3600 : 86400);
-
-	// Prevent division by zero or near-zero values
-	if (divisor <= 0) return 0;
-
-	return Math.round(sumGold / divisor); // Return gold per the specified interval
-};
-
-
-// Function to change the interval (can be called externally)
-const setGoldInterval = (newInterval) => {
-	if (['minute', 'hour', 'day'].includes(newInterval)) {
-		interval = newInterval;
-	} else {
-		console.warn("Invalid interval. Use 'minute', 'hour', or 'day'.");
+	
+	if(!is_in_range(target))
+	{
+		if (!is_on_cooldown("charge"))
+			use_skill("charge")
 	}
-};
+	else if(can_attack(target))
+	{
+		set_message("Attacking");
+		attack(target);
+	}
+	else {
+		if(!is_on_cooldown("cleave") && character.mp > 721) {
+			use_skill("cleave");
+		}
+	}
+	
+	if(!is_on_cooldown("cleave") && character.mp > 1000) {
+		use_skill("cleave");
+	}
+	
+},1000/4); // Loops every 1/4 seconds.

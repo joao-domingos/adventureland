@@ -2,6 +2,13 @@ load_code(1);
 load_code(2);
 load_code(3);
 
+load_code(21);
+load_code(22);
+load_code(24);
+load_code(25);
+load_code(28);
+load_code(29);
+
 setInterval(function(){
 	
 	acceptParty();

@@ -1,11 +1,14 @@
-// Hey there!
-// This is CODE, lets you control your character with code.
-// If you don't know how to code, don't worry, It's easy.
-// Just set attack_mode to true and ENGAGE!
 
 load_code(1);
 load_code(2);
 load_code(3);
+
+load_code(21);
+load_code(22);
+load_code(24);
+load_code(25);
+load_code(28);
+load_code(29);
 
 function healing(healTarget) {
 	if (healTarget && can_heal(healTarget) && is_in_range(healTarget))
@@ -35,6 +38,14 @@ setInterval(function(){
 	
 	if(leader !== null) 
 		move(leader.x-25, leader.y-70);
+	
+	let helpp;
+    if(!helpp){
+        helpp=get_nearest_monster({type: 'spider'});
+        helpp
+    }
+    if (helpp.target !== "idkhtcwarr")
+        if(can_attack(helpp)) attack(helpp);
 
 	if(!is_on_cooldown("absorb") && character.mp > 1000) {
 		if(damDealer.hp < 2500) {

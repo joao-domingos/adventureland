@@ -1,6 +1,18 @@
 load_code(2);
 load_code(4);
 
+load_code(20);
+load_code(21);
+load_code(22);
+load_code(23);
+load_code(24);
+load_code(25);
+load_code(26);
+load_code(27);
+load_code(28);
+load_code(29);
+
+
 const partyLeader = "idkhtcmerch";
 const partyMembers = ["idkhtcode", "idkhtcprst", "idkhtcwarr", "idkhtcmage"];
 
